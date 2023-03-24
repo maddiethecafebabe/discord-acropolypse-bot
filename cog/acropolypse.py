@@ -85,6 +85,7 @@ async def check_message(message, dry_run: bool = False) -> Tuple[int, int, str]:
     return (1 if vulnerable_attachments else 0, 0, message.jump_url)
 
 async def check_channel(channel, dry_run: bool) -> Tuple[int, int, List[str]]:
+    logging.info(f"checking channel #{channel.name}...")
     found, deleted, unpurged = 0, 0, []
     async for m in channel.history():
         (nfound, ndeleted, message) = await check_message(m, dry_run)
@@ -96,7 +97,7 @@ async def check_channel(channel, dry_run: bool) -> Tuple[int, int, List[str]]:
 
 async def check_server(guild, dry_run: bool) -> Tuple[int, int]:
     found, deleted, unpurged_guild = 0, 0, []
-    for channel in guild.channels:
+    for channel in guild.text_channels:
         (nfound, ndeleted, unpurged) = await check_channel(channel, dry_run)
         found += nfound
         deleted += ndeleted
@@ -118,9 +119,14 @@ class Acropolypse(commands.Cog):
             await ctx.send(f"Found and deleted {found} vulnerable images")
 
     @commands.command()
-    async def check_whole_server(self, ctx):
-        (found, deleted) = await check_server(ctx.guild)
-        await ctx.send(f"Found {found} vulnerable images and deleted {deleted}.")
+    async def check_whole_server(self, ctx, dry_run: bool = False):
+        (found, deleted, unpurged) = await check_server(ctx.guild, dry_run)
+        if found != deleted:
+            fp = io.StringIO("\n".join(s for s in unpurged))
+            file = discord.File(fp=fp, filename="message-urls.txt")
+            await ctx.send(content=f"Found {found} images and deleted {deleted}. A list of undeleted messages is attached:", file=file)
+        else:
+            await ctx.send(f"Found and deleted {found} vulnerable images")
 
 async def setup(bot):
     await bot.add_cog(Acropolypse(bot))
