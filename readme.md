@@ -5,3 +5,7 @@ for detection this uses a script by retr0id <https://gist.github.com/DavidBuchan
 the code is mostly horrible and will probably do horrible things if you run it on a large server because the ""ratelimiting"" is very bad. im not responsible if you get your account/bot thrown into the shadowrealm
 
 this needs the `message_content` intent and a `DISCORD_TOKEN` environment variable
+
+# License
+
+im not sure about the license on the det.py script but `cog/acropolypse.py` and `bot.py` are released into the public domain so feel free to use them in your own bot or tweak them to your needs
