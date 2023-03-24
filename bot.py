@@ -13,7 +13,7 @@ intents.message_content = True
 
 class AcropolypseBot(commands.Bot):
     async def on_ready(self):
-        logging.info(f'Logged in as {self.user}')
+        logging.info(f'Logged in as {self.user}. The command prefix is {self.command_prefix}')
 
         await self.load_extension("cog.acropolypse")
 
