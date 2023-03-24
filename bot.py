@@ -8,7 +8,8 @@ discord.utils.setup_logging()
 
 dotenv.load_dotenv()
 
-intents = discord.Intents.all()
+intents = discord.Intents.default()
+intents.message_content = True
 
 class AcropolypseBot(commands.Bot):
     async def on_ready(self):
