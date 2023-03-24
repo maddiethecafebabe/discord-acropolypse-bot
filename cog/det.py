@@ -7,12 +7,19 @@ from typing import Union
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 
+class StubbedAssertException(Exception):
+	pass
+
+def stubbed_assert(cond):
+	if not(cond):
+		raise StubbedAssertException()
+
 def parse_png_chunk(stream):
 	size = int.from_bytes(stream.read(4), "big")
 	ctype = stream.read(4)
 	body = stream.read(size)
 	csum = int.from_bytes(stream.read(4), "big")
-	assert(zlib.crc32(ctype + body) == csum)
+	stubbed_assert(zlib.crc32(ctype + body) == csum)
 	return ctype, body
 
 def valid_png_iend(trailer):
@@ -23,7 +30,7 @@ def valid_png_iend(trailer):
 
 def parse_png(f_in):
 	magic = f_in.read(len(PNG_MAGIC))
-	assert(magic == PNG_MAGIC)
+	stubbed_assert(magic == PNG_MAGIC)
 	# find end of cropped PNG
 	while True:
 		ctype, body = parse_png_chunk(f_in)
@@ -38,18 +45,18 @@ def parse_png(f_in):
 # true == vulnerable
 def parse_jpeg(f_in) -> bool:
 	SOI_marker = f_in.read(2)
-	assert(SOI_marker == b"\xFF\xD8")
+	stubbed_assert(SOI_marker == b"\xFF\xD8")
 	APP0_marker = f_in.read(2)
-	assert(APP0_marker == b"\xFF\xE0")
+	stubbed_assert(APP0_marker == b"\xFF\xE0")
 	APP0_size = int.from_bytes(f_in.read(2), "big")
 	APP0_body = f_in.read(APP0_size - 2)
-	assert(APP0_body[:4] == b"JFIF")
+	stubbed_assert(APP0_body[:4] == b"JFIF")
 	
 	f_in.seek(0,0)
 	file = f_in.read()
 	EOI_marker_pos = file.index(b"\xFF\xD9")
 
-	assert(EOI_marker_pos)
+	stubbed_assert(EOI_marker_pos)
 	
 	cropped = file[:EOI_marker_pos + 2]
 	trailer = file[EOI_marker_pos + 2:]
@@ -63,11 +70,15 @@ def test_picture_bytes(buf) -> Union[bool, None]:
 	start = fp.read(2)
 	fp.seek(0, 0)
 
-	if start == b"\x89P":
-		return parse_png(fp)
-	elif start == b"\xFF\xD8":
-		return parse_jpeg(fp)
-	else:
+	try:
+		if start == b"\x89P":
+			return parse_png(fp)
+		elif start == b"\xFF\xD8":
+			return parse_jpeg(fp)
+		else:
+			return None
+	except StubbedAssertException:
+		print("encountered invalid png/jpg, skipping..")
 		return None
 
 if __name__ == "__main__":
