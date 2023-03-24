@@ -40,7 +40,7 @@ async def check_image_from_url(url) -> bool:
         async with session.get(url) as res:
             if res.status == 429:
                 delay = random.randint(5, 60)
-                print(f"Hit 429, sleeping for {delay}")
+                logging.warning(f"Hit 429, sleeping for {delay}")
                 await asyncio.sleep(delay)
                 return await check_image_from_url(url)
             elif res.status == 200:
@@ -54,7 +54,7 @@ async def check_message(message, dry_run: bool = False) -> Tuple[int, int, str]:
             url = embed.url
             if might_be_pixel_screenshot(url) and await check_image_from_url(url):
                 try:
-                    print(f"Removing message...")
+                    logging.info(f"Removing message...")
                     if not dry_run:
                         await message.delete()
                         return (1, 1, message.jump_url)
@@ -70,11 +70,11 @@ async def check_message(message, dry_run: bool = False) -> Tuple[int, int, str]:
     for attachment in message.attachments:
         # use .read() here because it deals with ratelimits better than pure aiohttp
         if might_be_pixel_screenshot(attachment.url) and test_image(await attachment.read()):
-            print(f"vuln image attachment: {attachment.url}")
+            logging.info(f"vuln image attachment: {attachment.url}")
             vulnerable_attachments.append(attachment)
 
     if vulnerable_attachments and not dry_run:
-        print(f"Removing attachments: {vulnerable_attachments}")
+        logging.info(f"Removing attachments: {vulnerable_attachments}")
         try:
             await message.remove_attachments(*vulnerable_attachments)
             return (1, 1, message.jump_url)
@@ -111,6 +111,7 @@ async def send_report(ctx, found, deleted, unpurged):
         await ctx.send(content=f"Found {found} images and deleted {deleted}. A list of undeleted messages is attached:", file=file)
     else:
         await ctx.send(f"Found and deleted {found} vulnerable images")
+    logging.info("done.")
 
 class Acropolypse(commands.Cog):
     def __init__(self, bot):
