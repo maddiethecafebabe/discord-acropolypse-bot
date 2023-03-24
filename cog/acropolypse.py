@@ -109,6 +109,7 @@ class Acropolypse(commands.Cog):
         self.bot = bot
 
     @commands.command()
+    @commands.is_owner()
     async def check_channel(self, ctx, *, dry_run: bool = False):
         (found, deleted, unpurged) = await check_channel(ctx.channel, dry_run)
         if found != deleted:
@@ -119,6 +120,7 @@ class Acropolypse(commands.Cog):
             await ctx.send(f"Found and deleted {found} vulnerable images")
 
     @commands.command()
+    @commands.is_owner()
     async def check_whole_server(self, ctx, dry_run: bool = False):
         (found, deleted, unpurged) = await check_server(ctx.guild, dry_run)
         if found != deleted:
