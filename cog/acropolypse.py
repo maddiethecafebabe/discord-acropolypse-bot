@@ -4,6 +4,8 @@ from .det import test_picture_bytes
 import logging
 import aiohttp
 import io
+import asyncio
+import random
 
 from typing import Tuple, List
 
@@ -36,7 +38,15 @@ def test_image(buf) -> bool:
 async def check_image_from_url(url) -> bool:
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as res:
-            return test_image(await res.read())
+            if res.status == 429:
+                delay = random.randint(5, 60)
+                print(f"Hit 429, sleeping for {delay}")
+                await asyncio.sleep(delay)
+                return await check_image_from_url(url)
+            elif res.status == 200:
+                return test_image(await res.read())
+            else:
+                return False
 
 async def check_message(message, dry_run: bool = False) -> Tuple[int, int, str]:
     for embed in message.embeds:
