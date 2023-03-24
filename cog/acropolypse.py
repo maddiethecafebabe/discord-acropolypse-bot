@@ -104,31 +104,29 @@ async def check_server(guild, dry_run: bool) -> Tuple[int, int]:
         unpurged_guild += unpurged
     return (found, deleted, unpurged_guild)
 
+async def send_report(ctx, found, deleted, unpurged):
+    if found != deleted:
+        fp = io.StringIO("\n".join(s for s in unpurged))
+        file = discord.File(fp=fp, filename="message-urls.txt")
+        await ctx.send(content=f"Found {found} images and deleted {deleted}. A list of undeleted messages is attached:", file=file)
+    else:
+        await ctx.send(f"Found and deleted {found} vulnerable images")
+
 class Acropolypse(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.command()
     @commands.is_owner()
-    async def check_channel(self, ctx, *, dry_run: bool = False):
-        (found, deleted, unpurged) = await check_channel(ctx.channel, dry_run)
-        if found != deleted:
-            fp = io.StringIO("\n".join(s for s in unpurged))
-            file = discord.File(fp=fp, filename="message-urls.txt")
-            await ctx.send(content=f"Found {found} images and deleted {deleted}. A list of undeleted messages is attached:", file=file)
-        else:
-            await ctx.send(f"Found and deleted {found} vulnerable images")
+    async def check_channel(self, ctx, dry_run: bool = False):
+        res = await check_channel(ctx.channel, dry_run)
+        await send_report(ctx, *res)
 
     @commands.command()
     @commands.is_owner()
     async def check_whole_server(self, ctx, dry_run: bool = False):
-        (found, deleted, unpurged) = await check_server(ctx.guild, dry_run)
-        if found != deleted:
-            fp = io.StringIO("\n".join(s for s in unpurged))
-            file = discord.File(fp=fp, filename="message-urls.txt")
-            await ctx.send(content=f"Found {found} images and deleted {deleted}. A list of undeleted messages is attached:", file=file)
-        else:
-            await ctx.send(f"Found and deleted {found} vulnerable images")
+        res = await check_server(ctx.guild, dry_run)
+        await send_report(ctx, *res)
 
 async def setup(bot):
     await bot.add_cog(Acropolypse(bot))
